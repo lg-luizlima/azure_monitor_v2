@@ -28,6 +28,7 @@ spec:
     checksum/secret: {{ include (print $.Template.BasePath "/ama-logs-secret.yaml") . | sha256sum }}
     checksum/config: {{ toYaml .Values.amalogs.resources | sha256sum }}
     checksum/logsettings: {{ toYaml .Values.amalogs.logsettings | sha256sum }}
+    checksum/agentconfig: {{ include (print $.Template.BasePath "/container-azm-ms-agentconfig.yaml") . | sha256sum }}
   spec:
   {{- if .Values.amalogs.rbac }}
    serviceAccountName: {{ include "azuremonitor-containers.amalogsName" . }}

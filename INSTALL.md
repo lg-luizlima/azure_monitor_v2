@@ -42,8 +42,53 @@ v2-ama-logs-ds / -rs           labels seletores
 ```
 
 Os ConfigMaps `container-azm-ms-agentconfig` e `container-azm-ms-osmconfig`
-**não** são prefixados de propósito: são criados pelo addon gerenciado e
-marcados como `optional: true`.
+**não** são prefixados de propósito: o primeiro é lido pelo agente pelo nome
+fixo, e o segundo não tem mais utilidade.
+
+- `container-azm-ms-agentconfig` é **criado por este chart** (quando
+  `amalogs.logsettings.createAgentConfigMap=true`, default). Ele é quem define
+  o schema dos logs de container — sem ele o agente assume `v1` e escreve na
+  tabela `ContainerLog`, e não em `ContainerLogV2`. O addon gerenciado do AKS
+  também cria esse ConfigMap, mas apenas em `kube-system`; como esta instância
+  roda em outro namespace, ele precisaria ser criado à mão.
+- `container-azm-ms-osmconfig` era usado para scraping Prometheus do Open
+  Service Mesh. A OSM foi arquivada pelo CNCF em 2024 e a Microsoft removeu o
+  manifesto do agente ([Docker-Provider#1700](https://github.com/microsoft/Docker-Provider/pull/1700)).
+  A montagem é opcional e o ConfigMap não precisa existir.
+
+## ContainerLogV2
+
+O default do chart é `amalogs.logsettings.containerlogSchemaVersion: "v2"`, que
+faz os logs irem para a tabela `ContainerLogV2`. A tabela `ContainerLog` (v1) é
+descontinuada em **30 de setembro de 2026**.
+
+Opções úteis:
+
+```bash
+# não excluir nenhum namespace
+--set-json 'amalogs.logsettings.excludeNamespaces=[]'
+
+# coletar também os logs do coreDNS
+--set-json 'amalogs.logsettings.collectSystemPodLogs=["kube-system:coredns"]'
+
+# multiline (stitch de linhas de stacktrace)
+--set amalogs.logsettings.multilineLogs.enabled=true \
+--set-json 'amalogs.logsettings.multilineLogs.stacktraceLanguages=["go","java"]'
+```
+
+`metadata_collection` (coluna `KubernetesMetadata`) e `highLogScale` exigem
+autenticação por managed identity e, no segundo caso, um data collection
+endpoint com o stream `Microsoft-ContainerLogV2-HighScale`.
+
+Depois de qualquer mudança o agente reinicia sozinho (o pod tem a annotation
+`checksum/agentconfig`). Para conferir o schema ativo:
+
+```bash
+kubectl -n kube-monitor exec ds/v2-ama-logs -c ama-logs -- \
+  bash -c "grep containerlog_schema /etc/config/settings/log-data-collection-settings"
+```
+
+Erros de parsing do ConfigMap aparecem na tabela `KubeMonAgentEvents`.
 
 ## Instalação
 

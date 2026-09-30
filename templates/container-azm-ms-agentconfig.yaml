@@ -1,0 +1,63 @@
+{{- $ls := .Values.amalogs.logsettings }}
+{{- if $ls.createAgentConfigMap }}
+{{- $array := list }}
+{{- range $ns := $ls.excludeNamespaces }}{{ $array = append $array ($ns | quote) }}{{ end }}
+{{- $langs := list }}
+{{- range $l := $ls.multilineLogs.stacktraceLanguages }}{{ $langs = append $langs ($l | quote) }}{{ end }}
+{{- $fields := list }}
+{{- range $f := $ls.metadataCollection.includeFields }}{{ $fields = append $fields ($f | quote) }}{{ end }}
+{{- $sysPods := list }}
+{{- range $p := $ls.collectSystemPodLogs }}{{ $sysPods = append $sysPods ($p | quote) }}{{ end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: container-azm-ms-agentconfig
+  namespace: {{ include "azuremonitor-containers.namespace" . }}
+  labels:
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+data:
+  schema-version: v1
+  config-version: ver1
+  log-data-collection-settings: |-
+    [log_collection_settings]
+       [log_collection_settings.stdout]
+          enabled = {{ $ls.stdoutEnabled }}
+       {{- if $array }}
+          exclude_namespaces = [{{ join "," $array }}]
+       {{- end }}
+       {{- if $sysPods }}
+          collect_system_pod_logs = [{{ join "," $sysPods }}]
+       {{- end }}
+       [log_collection_settings.stderr]
+          enabled = {{ $ls.stderrEnabled }}
+       {{- if $array }}
+          exclude_namespaces = [{{ join "," $array }}]
+       {{- end }}
+       [log_collection_settings.env_var]
+          enabled = {{ $ls.envVarEnabled }}
+       [log_collection_settings.enrich_container_logs]
+          enabled = {{ $ls.enrichContainerLogs }}
+       [log_collection_settings.collect_all_kube_events]
+          enabled = {{ $ls.collectAllKubeEvents }}
+       [log_collection_settings.schema]
+          containerlog_schema_version = "{{ $ls.containerlogSchemaVersion }}"
+       [log_collection_settings.enable_multiline_logs]
+          enabled = {{ $ls.multilineLogs.enabled }}
+       {{- if and $ls.multilineLogs.enabled $langs }}
+          stacktrace_languages = [{{ join "," $langs }}]
+       {{- end }}
+       [log_collection_settings.metadata_collection]
+          enabled = {{ $ls.metadataCollection.enabled }}
+       {{- if and $ls.metadataCollection.enabled $fields }}
+          include_fields = [{{ join "," $fields }}]
+       {{- end }}
+       [log_collection_settings.filter_using_annotations]
+          enabled = {{ $ls.filterUsingAnnotations.enabled }}
+{{- if $ls.highLogScale.enabled }}
+  agent-settings: |-
+    [agent_settings.high_log_scale]
+       enabled = true
+{{- end }}
+{{- end }}

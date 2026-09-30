@@ -97,6 +97,16 @@ The following table lists the configurable parameters of the MSOMS chart and the
 | `amalogs.namePrefix`        | Prefix applied to every object name created by this chart | `v2`. Set to `""` to use the upstream names. Required to install this chart next to another ama-logs installation, since the object names would otherwise collide |
 | `amalogs.namespace`         | Namespace the ama-logs objects are created in          | kube-system                                                                                                                |
 | `amalogs.adxSecretName`     | Name of the optional ADX / data collection endpoint secret | `<namePrefix>ama-logs-adx-secret`. This chart does not create it                                                  |
+| `amalogs.logsettings.createAgentConfigMap` | Create the `container-azm-ms-agentconfig` ConfigMap | `true`. Set to `false` when the ConfigMap is managed outside this chart |
+| `amalogs.logsettings.containerlogSchemaVersion` | Container log schema | `v2` (writes to the `ContainerLogV2` table). `v1` uses the deprecated `ContainerLog` table, retired on 30 Sep 2026 |
+| `amalogs.logsettings.excludeNamespaces` | Namespaces skipped for stdout/stderr collection | `["kube-system","gatekeeper-system"]`, the agent default |
+| `amalogs.logsettings.collectSystemPodLogs` | System pods to collect as `namespace:controllerName` | `[]` |
+| `amalogs.logsettings.multilineLogs.enabled` | Stitch container logs split by docker/cri (16KB lines) | `false`. Requires schema `v2` |
+| `amalogs.logsettings.multilineLogs.stacktraceLanguages` | Languages stitched when multiline is on | `[]`. Valid values: `go`, `java`, `python`, `dotnet` |
+| `amalogs.logsettings.metadataCollection.enabled` | Populate the `KubernetesMetadata` column | `false`. Requires managed identity and schema `v2` |
+| `amalogs.logsettings.metadataCollection.includeFields` | Metadata fields to collect, empty means all | `[]` |
+| `amalogs.logsettings.filterUsingAnnotations.enabled` | Exclude pods annotated with `fluentbit.io/exclude: "true"` | `false` |
+| `amalogs.logsettings.highLogScale.enabled` | [High log scale mode](https://aka.ms/cihsmode) | `false`. Requires a data collection endpoint and the `Microsoft-ContainerLogV2-HighScale` stream |
 
 > Note: For Azure Manage K8s clusters such as Azure Arc K8s and ARO v4, `amalogs.env.clusterId` with fully qualified azure resource id of the cluster should be used instead of `amalogs.env.clusterName`
 
@@ -117,6 +127,14 @@ install this chart next to the AKS managed addon. See `INSTALL.md`.
 ## Agent data collection settings
 
 Staring with chart version 1.0.0, agent data collection settings are controlled thru a config map. Refer to documentation about agent data collection settings [here](https://docs.microsoft.com/en-us/azure/azure-monitor/insights/container-insights-agent-config)
+
+This chart creates the `container-azm-ms-agentconfig` ConfigMap in
+`amalogs.namespace` from the `amalogs.logsettings.*` values. The agent reads it
+by its fixed name, so the name is not prefixed — install this chart in its own
+namespace to avoid sharing the ConfigMap with the AKS managed addon. The pods
+carry a `checksum/agentconfig` annotation and roll automatically whenever these
+settings change. Config parsing errors are reported in the `KubeMonAgentEvents`
+table.
 
 You can create a Azure Loganalytics workspace from portal.azure.com and get its ID & PRIMARY KEY from 'Advanced Settings' tab in the Ux.
 

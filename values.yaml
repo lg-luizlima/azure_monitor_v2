@@ -118,6 +118,57 @@ amalogs:
     ## Applicable for only Azure Stack Edge K8s since it has custom mount path for container logs which will have symlink to /var/log path
     custommountpath: ""
 
+    ## The container-azm-ms-agentconfig ConfigMap holds the agent's log
+    ## collection settings and is the only place the container log schema is
+    ## selected. The AKS managed addon creates it in kube-system; when the
+    ## agent runs in its own namespace (amalogs.namespace) nothing creates it,
+    ## so this chart does when createAgentConfigMap is true. Set it to false if
+    ## the ConfigMap is managed outside this chart.
+    createAgentConfigMap: true
+
+    ## "v2" writes container logs to the ContainerLogV2 table, "v1" to the
+    ## deprecated ContainerLog table (retired on 30 Sep 2026).
+    containerlogSchemaVersion: "v2"
+
+    ## Namespaces skipped for stdout/stderr collection. Leave the list empty to
+    ## omit the setting and keep the agent default (kube-system and
+    ## gatekeeper-system excluded). collectSystemPodLogs only applies to
+    ## namespaces inside this list, as "namespace:controllerName".
+    excludeNamespaces:
+      - "kube-system"
+      - "gatekeeper-system"
+    collectSystemPodLogs: []
+
+    stdoutEnabled: true
+    stderrEnabled: true
+    envVarEnabled: true
+    enrichContainerLogs: false
+    ## When false only non-normal kube events are collected.
+    collectAllKubeEvents: false
+
+    ## Stitches logs split by docker/cri (16KB lines) back together. Requires
+    ## containerlogSchemaVersion "v2". Valid stacktraceLanguages: go, java,
+    ## python, dotnet.
+    multilineLogs:
+      enabled: false
+      stacktraceLanguages: []
+
+    ## Populates the KubernetesMetadata column of ContainerLogV2. Requires
+    ## managed identity authentication; empty includeFields means all fields.
+    metadataCollection:
+      enabled: false
+      includeFields: []
+
+    ## Excludes pods annotated with fluentbit.io/exclude: "true".
+    filterUsingAnnotations:
+      enabled: false
+
+    ## High log scale mode needs a data collection endpoint and the
+    ## Microsoft-ContainerLogV2-HighScale stream in the DCR. See
+    ## https://aka.ms/cihsmode
+    highLogScale:
+      enabled: false
+
   ## Configure node tolerations for scheduling onto nodes with taints
   ## Ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/
   ## https://kubernetes.io/blog/2022/04/07/upcoming-changes-in-kubernetes-1-24/

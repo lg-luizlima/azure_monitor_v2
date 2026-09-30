@@ -27,6 +27,7 @@ spec:
     schema-versions: "v1"
     checksum/secret: {{ include (print $.Template.BasePath "/ama-logs-secret.yaml") . | sha256sum }}
     checksum/config: {{ toYaml .Values.amalogs.resources | sha256sum }}
+    checksum/agentconfig: {{ include (print $.Template.BasePath "/container-azm-ms-agentconfig.yaml") . | sha256sum }}
   spec:
    priorityClassName: {{ include "azuremonitor-containers.amalogsName" . }}
    dnsConfig:
