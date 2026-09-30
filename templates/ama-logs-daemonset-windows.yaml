@@ -3,8 +3,8 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
- name: ama-logs-windows
- namespace: kube-system
+ name: {{ include "azuremonitor-containers.amalogsWindowsName" . }}
+ namespace: {{ include "azuremonitor-containers.namespace" . }}
  labels:
    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
    release: {{ .Release.Name }}
@@ -16,11 +16,11 @@ spec:
   type: RollingUpdate
  selector:
    matchLabels:
-     dsName: "ama-logs-ds"
+     dsName: {{ include "azuremonitor-containers.amalogsDsLabel" . }}
  template:
   metadata:
    labels:
-    dsName: "ama-logs-ds"
+    dsName: {{ include "azuremonitor-containers.amalogsDsLabel" . }}
    annotations:
     agentVersion: {{ .Values.amalogs.image.winAgentVersion }}
     dockerProviderVersion: {{ .Values.amalogs.image.dockerProviderVersion }}
@@ -28,7 +28,7 @@ spec:
     checksum/secret: {{ include (print $.Template.BasePath "/ama-logs-secret.yaml") . | sha256sum }}
     checksum/config: {{ toYaml .Values.amalogs.resources | sha256sum }}
   spec:
-   priorityClassName: ama-logs
+   priorityClassName: {{ include "azuremonitor-containers.amalogsName" . }}
    dnsConfig:
      options:
        - name: ndots
@@ -41,7 +41,7 @@ spec:
       kubernetes.io/os: windows
 {{- end }}
    {{- if .Values.amalogs.rbac }}
-   serviceAccountName: ama-logs
+   serviceAccountName: {{ include "azuremonitor-containers.amalogsName" . }}
    {{- end }}
    containers:
      - name: ama-logs-windows
@@ -185,10 +185,10 @@ spec:
         optional: true
     - name: ama-logs-secret
       secret:
-       secretName: ama-logs-secret
+       secretName: {{ include "azuremonitor-containers.amalogsSecretName" . }}
     - name: ama-logs-adx-secret
       secret:
-       secretName: ama-logs-adx-secret
+       secretName: {{ include "azuremonitor-containers.amalogsAdxSecretName" . }}
        optional: true
 {{- end }}
 {{- end }}

@@ -8,8 +8,8 @@ metadata:
   namespace: azure-arc
 spec:
   serviceAccounts:
-    - name: ama-logs
-      namespace: kube-system
+    - name: {{ include "azuremonitor-containers.amalogsName" . }}
+      namespace: {{ include "azuremonitor-containers.namespace" . }}
   tokenNamespace: azure-arc
 ---
 {{- end }}

@@ -2,8 +2,8 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
- name: ama-logs
- namespace: kube-system
+ name: {{ include "azuremonitor-containers.amalogsName" . }}
+ namespace: {{ include "azuremonitor-containers.namespace" . }}
  labels:
    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
    release: {{ .Release.Name }}
@@ -15,11 +15,11 @@ spec:
   type: RollingUpdate
  selector:
    matchLabels:
-     dsName: "ama-logs-ds"
+     dsName: {{ include "azuremonitor-containers.amalogsDsLabel" . }}
  template:
   metadata:
    labels:
-    dsName: "ama-logs-ds"
+    dsName: {{ include "azuremonitor-containers.amalogsDsLabel" . }}
    annotations:
     agentVersion: {{ .Values.amalogs.image.agentVersion }}
     dockerProviderVersion: {{ .Values.amalogs.image.dockerProviderVersion }}
@@ -28,13 +28,13 @@ spec:
     checksum/config: {{ toYaml .Values.amalogs.resources | sha256sum }}
     checksum/logsettings: {{ toYaml .Values.amalogs.logsettings | sha256sum }}
   spec:
-   priorityClassName: ama-logs
+   priorityClassName: {{ include "azuremonitor-containers.amalogsName" . }}
    dnsConfig:
      options:
        - name: ndots
          value: "3"
    {{- if .Values.amalogs.rbac }}
-   serviceAccountName: ama-logs
+   serviceAccountName: {{ include "azuremonitor-containers.amalogsName" . }}
    {{- end }}
    containers:
 {{- if and (ne .Values.Azure.Cluster.ResourceId "<your_cluster_id>") (.Values.amalogs.useAADAuth) }}
@@ -344,7 +344,7 @@ spec:
        path: /etc/kubernetes
     - name: ama-logs-secret
       secret:
-       secretName: ama-logs-secret
+       secretName: {{ include "azuremonitor-containers.amalogsSecretName" . }}
     - name: settings-vol-config
       configMap:
         name: container-azm-ms-agentconfig
@@ -356,7 +356,7 @@ spec:
     {{- end }}
     - name: ama-logs-adx-secret
       secret:
-       secretName: ama-logs-adx-secret
+       secretName: {{ include "azuremonitor-containers.amalogsAdxSecretName" . }}
        optional: true
     - name: osm-settings-vol-config
       configMap:

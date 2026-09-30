@@ -94,8 +94,19 @@ The following table lists the configurable parameters of the MSOMS chart and the
 | `amalogs.rbac`              | rbac enabled/disabled                                   | true  (i.e.enabled)                                                                                                           |
 | `amalogs.proxy`             | Proxy endpoint                                          | Doesnt have default value. Refer to [configure proxy](#Configuring-Proxy-Endpoint) |
 | `amalogs.priority`          | DaemonSet Pod Priority                                  | This is the [priority](https://kubernetes.io/docs/concepts/configuration/pod-priority-preemption/) to use for the daemonsets such that they get scheduled onto the node ahead of "normal" pods - must be an integer, defaults to 10 |
+| `amalogs.namePrefix`        | Prefix applied to every object name created by this chart | `v2`. Set to `""` to use the upstream names. Required to install this chart next to another ama-logs installation, since the object names would otherwise collide |
+| `amalogs.namespace`         | Namespace the ama-logs objects are created in          | kube-system                                                                                                                |
+| `amalogs.adxSecretName`     | Name of the optional ADX / data collection endpoint secret | `<namePrefix>ama-logs-adx-secret`. This chart does not create it                                                  |
 
 > Note: For Azure Manage K8s clusters such as Azure Arc K8s and ARO v4, `amalogs.env.clusterId` with fully qualified azure resource id of the cluster should be used instead of `amalogs.env.clusterName`
+
+### Running more than one ama-logs instance in the same cluster
+
+The upstream chart hardcodes the names of its cluster scoped objects
+(`ama-logs`, `ama-logs-reader`, `amalogsclusterrolebinding`, ...) and of the
+DaemonSet/Deployment selectors, so two installations would fight over the same
+objects. `amalogs.namePrefix` prefixes all of them, which makes it safe to
+install this chart next to the AKS managed addon. See `INSTALL.md`.
 
 ### Note
 

@@ -2,8 +2,8 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
- name: ama-logs-rs
- namespace: kube-system
+ name: {{ include "azuremonitor-containers.amalogsRsName" . }}
+ namespace: {{ include "azuremonitor-containers.namespace" . }}
  labels:
    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
    release: {{ .Release.Name }}
@@ -14,13 +14,13 @@ spec:
  replicas: 1
  selector:
   matchLabels:
-   rsName: "ama-logs-rs"
+   rsName: {{ include "azuremonitor-containers.amalogsRsName" . }}
  strategy:
   type: RollingUpdate
  template:
   metadata:
    labels:
-    rsName: "ama-logs-rs"
+    rsName: {{ include "azuremonitor-containers.amalogsRsName" . }}
    annotations:
     agentVersion: {{ .Values.amalogs.image.agentVersion }}
     dockerProviderVersion: {{ .Values.amalogs.image.dockerProviderVersion }}
@@ -30,7 +30,7 @@ spec:
     checksum/logsettings: {{ toYaml .Values.amalogs.logsettings | sha256sum }}
   spec:
   {{- if .Values.amalogs.rbac }}
-   serviceAccountName: ama-logs
+   serviceAccountName: {{ include "azuremonitor-containers.amalogsName" . }}
   {{- end }}
    containers:
 {{- if and (ne .Values.Azure.Cluster.ResourceId "<your_cluster_id>") (.Values.amalogs.useAADAuth) }}
@@ -231,10 +231,10 @@ spec:
        path: /etc/kubernetes
     - name: ama-logs-secret
       secret:
-       secretName: ama-logs-secret
+       secretName: {{ include "azuremonitor-containers.amalogsSecretName" . }}
     - name: ama-logs-rs-config
       configMap:
-        name: ama-logs-rs-config
+        name: {{ include "azuremonitor-containers.amalogsRsConfigName" . }}
     - name: settings-vol-config
       configMap:
         name: container-azm-ms-agentconfig
@@ -246,7 +246,7 @@ spec:
     {{- end }}
     - name: ama-logs-adx-secret
       secret:
-       secretName: ama-logs-adx-secret
+       secretName: {{ include "azuremonitor-containers.amalogsAdxSecretName" . }}
        optional: true
     - name: osm-settings-vol-config
       configMap:

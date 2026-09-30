@@ -238,8 +238,8 @@ data:
       max_retry_wait 5m
     </match>
 metadata:
-  name: ama-logs-rs-config
-  namespace: kube-system
+  name: {{ include "azuremonitor-containers.amalogsRsConfigName" . }}
+  namespace: {{ include "azuremonitor-containers.namespace" . }}
   labels:
     chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
     release: {{ .Release.Name }}
